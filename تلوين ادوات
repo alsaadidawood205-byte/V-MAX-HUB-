@@ -1,0 +1,307 @@
+local RbgTab = Window:MakeTab({ Title = "التلوين", Icon = "rbxassetid://10734910187" })
+RbgTab:AddSection({ Name = "تلوين الادوات          ", Icon = "rbxassetid://10734950309" })
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local re = ReplicatedStorage:WaitForChild("RE")
+local running = false
+local ToolName = "BabyRattle"
+
+local Tools = {
+    ["حق الطلاء"] = "PaintRoller",
+    ["حمرة"] = "Lipstick",
+    ["قوس حق الاسهم"] = "Bow",
+    ["راديو الاغاني"] = "Boombox",
+    ["تارموس"] = "Thermos",
+    ["دونات"] = "Donut",
+    ["مشط حق الاحصنة"] = "HorseBrush",
+    ["عصي"] = "GlowingBatons",
+    ["مكبر صوت"] = "Megaphone",
+    ["شمعة"] = "Candle",
+    ["مشعل"] = "GuardTorch",
+    ["لعبة الاطفال"] = "BabyRattle"
+}
+
+local function equipTool(name)
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hum = char:WaitForChild("Humanoid")
+    local tool = player.Backpack:WaitForChild(name,2)
+    if tool then
+        tool.Parent = char
+        hum:EquipTool(tool)
+    end
+    return tool
+end
+
+local function hsv(t)
+    return Color3.fromHSV(t % 1, 1, 1) 
+end
+RbgTab:AddDropdown({
+    Name = "اختيار الاداة",
+    Default = "لعبة الاطفال",
+    Options = {"حق الطلاء","حمرة","قوس حق الاسهم","راديو الاغاني","تارموس","دونات","مشط حق الاحصنة","عصي","مكبر صوت","شمعة","مشعل","لعبة الاطفال"},
+    Callback = function(value)
+        ToolName = Tools[value]
+    end
+})
+RbgTab:AddToggle({
+    Name = "تلوين الاداة",
+    Default = false,
+    Callback = function(state)
+        running = state
+        if not state then return end
+
+        task.spawn(function()
+            re:WaitForChild("1Clea1rTool1s"):FireServer("ClearAllTools")
+            task.wait(0.2)
+            re:WaitForChild("1Too1l"):InvokeServer("PickingTools",ToolName)
+            task.wait(0.3)
+
+            local tool = equipTool(ToolName)
+            if not tool then return end
+
+            local setColor =
+                player.PlayerGui
+                :WaitForChild("ToolGui")
+                :WaitForChild("ToolSettings")
+                :WaitForChild("Settings")
+                :WaitForChild("PropsColor")
+                :WaitForChild("SetColor")
+
+            local hue = 0
+            local current = hsv(0)
+
+            local conn
+            conn = RunService.RenderStepped:Connect(function(dt)
+                if not running then
+                    conn:Disconnect()
+                    return
+                end
+                hue += dt * 0.3 
+                local target = hsv(hue)
+                current = current:Lerp(target, dt * 5) 
+                setColor:FireServer(current)
+            end)
+        end)
+    end
+})
+RbgTab:AddSection({ Name = "تلوين الشعر          ", Icon = "rbxassetid://10734939942" })
+local hairColors = {
+    Color3.new(1, 1, 0), Color3.new(0, 0, 1), Color3.new(1, 0, 1), Color3.new(1, 1, 1),
+    Color3.new(0, 1, 0), Color3.new(0.5, 0, 1), Color3.new(1, 0.647, 0), Color3.new(0, 1, 1)
+}
+local isActive = false
+
+local function changeHairColor()
+    local i = 1
+    while isActive do
+        if not isActive then break end
+        local args = { [1] = "ChangeHairColor2", [2] = hairColors[i] }
+        game:GetService("ReplicatedStorage"):WaitForChild("RE"):WaitForChild("1Max1y"):FireServer(unpack(args))
+        wait(0.1)
+        i = i % #hairColors + 1
+    end
+end
+
+RbgTab:AddToggle({
+    Name = "تلوين الشعر",
+    Description = "",
+    Default = false,
+    Callback = function(value)
+        isActive = value
+        if isActive then
+            changeHairColor()
+        end
+    end
+})
+RbgTab:AddSection({ Name = "تلوين الجسم          ", Icon = "rbxassetid://10709782758" })
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local ChangeBodyColor = Remotes:WaitForChild("ChangeBodyColor")
+
+local colors = {
+	"Pastel brown", "Pastel yellow", "Pastel blue", "Pastel green", "Pastel pink",
+	"Really red", "Bright orange", "Bright blue", "Bright violet", "Bright green",
+	"Bright yellow", "White", "Black", "Dark stone grey", "Medium stone grey",
+	"Light stone grey", "Bright red", "Bright yellowish green", "Bright bluish green",
+	"Bright purple", "Bright pink", "Reddish brown", "Earth green", "Sand red",
+	"Sand blue", "Sand green", "Dark green", "Navy blue", "Toothpaste", "Cyan",
+	"Hot pink", "Crimson", "Royal purple", "Neon orange", "Neon green", "Neon pink",
+	"Neon blue", "Gold", "Bright gold", "New Yeller", "Dark orange", "Deep blue",
+	"Maroon", "Bright maroon"
+}
+
+local rainbowEnabled = false
+local spinEnabled = false
+
+RbgTab:AddToggle({
+	Name = "تلوين الجسم ",
+	Default = false,
+	Callback = function(v)
+		rainbowEnabled = v
+		if v then
+			task.spawn(function()
+				while rainbowEnabled do
+					for _, color in ipairs(colors) do
+						if not rainbowEnabled then break end
+						ChangeBodyColor:FireServer(color)
+						task.wait(0.3)
+					end
+				end
+			end)
+		end
+	end
+})
+local rgbSpeed = 1
+
+RbgTab:AddSlider({
+    Name = "سرعة التلوين",
+    Description = "",
+    Min = 1,
+    Max = 5,
+    Increase = 1,
+    Default = 3,
+    Callback = function(Value)
+        rgbSpeed = Value
+    end
+})
+local function getRainbowColor(speedMultiplier)
+    local h = (tick() * speedMultiplier % 5) / 5 -- gira o hue suavemente de 0 a 1
+    return Color3.fromHSV(h, 1, 1)
+end
+
+local function fireServer(eventName, args)
+    local event = game:GetService("ReplicatedStorage"):FindFirstChild("RE")
+    if event and event:FindFirstChild(eventName) then
+        pcall(function()
+            event[eventName]:FireServer(unpack(args))
+        end)
+    end
+end
+
+--[[local Section = RbgTab:AddSection({""})
+
+local nameBioRGBActive = false
+RbgTab:AddToggle({
+    Name = "",
+    Default = false,
+    Callback = function(state)
+        nameBioRGBActive = state
+        if state then
+            task.spawn(function()
+                while nameBioRGBActive and LocalPlayer.Character do
+                    local color = getRainbowColor(rgbSpeed)
+                    fireServer("1RPNam1eColo1r", { "PickingRPNameColor", color })
+                    fireServer("1RPNam1eColo1r", { "PickingRPBioColor", color })
+                    task.wait(0.03)
+                end
+            end)
+        end
+    end
+})
+
+local ToggleCorpo = RbgTab:AddToggle({
+    Name = "",
+    Description = "",
+    Default = false
+})
+ToggleCorpo:Callback(function(Value)
+    getgenv().rgbCorpo = Value
+    task.spawn(function()
+        while getgenv().rgbCorpo do
+            local remote = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
+            if remote and remote:FindFirstChild("ChangeBodyColor") then
+                pcall(function()
+                    remote.ChangeBodyColor:FireServer({
+                        BrickColor.new(getRainbowColor(rgbSpeed))
+                    })
+                end)
+            end
+            task.wait(0.1)
+        end
+    end)
+end)
+local ToggleCabelo = RbgTab:AddToggle({
+    Name = "",
+    Description = "",
+    Default = false
+})
+ToggleCabelo:Callback(function(Value)
+    getgenv().rgbCabelo = Value
+    task.spawn(function()
+        while getgenv().rgbCabelo do
+            fireServer("1Max1y", {
+                "ChangeHairColor2",
+                getRainbowColor(rgbSpeed)
+            })
+            task.wait(0.5)
+        end
+    end)
+end)
+
+
+
+local Section = RbgTab:AddSection({""})
+
+
+
+local ToggleCasa = RbgTab:AddToggle({
+    Name = "",
+    Description = "",
+    Default = false
+})
+ToggleCasa:Callback(function(Value)
+    getgenv().rgbCasa = Value
+    task.spawn(function()
+        while getgenv().rgbCasa do
+            fireServer("1Player1sHous1e", {
+                "ColorPickHouse",
+                getRainbowColor(rgbSpeed)
+            })
+            task.wait(0.1)
+        end
+    end)
+end)
+ 
+local carRGBActive = false
+RbgTab:AddToggle({
+    Name = "",
+    Description = "",
+    Default = false,
+    Callback = function(state)
+        carRGBActive = state
+        if state then
+            task.spawn(function()
+                while carRGBActive and LocalPlayer.Character do
+                    local color = getRainbowColor(rgbSpeed)
+                    fireServer("1Player1sCa1r", { "PickingCarColor", color })
+                    task.wait(0.03)
+                end
+            end)
+        end
+    end
+})
+]] 
+local ToggleBicicleta = RbgTab:AddToggle({
+    Name = "تلوين سكوتر مال الاغاني او الدراجة",
+    Description = "",
+    Default = false
+})
+ToggleBicicleta:Callback(function(Value)
+    getgenv().rgbBicicleta = Value
+    task.spawn(function()
+        while getgenv().rgbBicicleta do
+            fireServer("1Player1sCa1r", {
+                "NoMotorColor",
+                getRainbowColor(rgbSpeed)
+            })
+            task.wait(0.1)
+        end
+    end)
+end)
